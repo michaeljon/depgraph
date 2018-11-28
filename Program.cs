@@ -19,7 +19,6 @@ namespace depgraph
                 options =>
                 {
                     var projects = LoadProjectInformation(options);
-                    ResolveReferences(projects);
                     GenerateGraph(options, projects);
                     
                     return 0;
@@ -54,33 +53,92 @@ namespace depgraph
             return projects;
         }
 
-        static void ResolveReferences(IList<ProjectInformation> projects)
-        {
-            return;
-        }
-
         static void GenerateGraph(ParserOptions options, IList<ProjectInformation> projects)
         {
-            foreach (var project in projects)
+            var projectList = projects
+                .Select(p => p.ProjectName)
+                .Union(projects
+                    .SelectMany(p => p.ProjectReferences)
+                    .ToHashSet())
+                .OrderBy(p => p);
+
+            var packageList = projects
+                .SelectMany(p => p.PackageReferences)
+                .ToHashSet()
+                .OrderBy(p => p);
+
+            using (var streamWriter = new StreamWriter(options.GraphFile))
             {
-                Console.WriteLine($"Project: {project.ProjectName}");
-                
+                streamWriter.WriteLine(
+@"digraph std {
+    graph [ bgcolor=white, fontname=Arial, fontcolor=blue, fontsize=8 ];
+    edge [ fontname=""Fira Code"", fontcolor=red, fontsize=8, arrowsize=0.5 ];
+    node [ fontname=""Fira Code"", style=filled, fillcolor=black, fontcolor=white, fontsize=8, shape=""box"" ];
+
+    # this project
+    Solution
+");
+
                 if (options.IncludeProjects)
                 {
-                    foreach (var reference in project.ProjectReferences)
+                    streamWriter.WriteLine();
+                    streamWriter.WriteLine("    node [ fontname=\"Fira Code\", fontcolor=black, style=\"\", fontsize=8, shape=\"box\" ];");
+                    foreach (var project in projectList)
                     {
-                        Console.WriteLine($"  Ref: {reference}");
+                        if (options.AddLabels)
+                        {
+                            streamWriter.WriteLine($"    \"{project}\" [label=\"{project.Replace(".", "\\n")}\"]");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"    \"{project}\"");
+                        }
                     }
                 }
 
                 if (options.IncludePackages)
                 {
-                    foreach (var reference in project.PackageReferences)
+                    streamWriter.WriteLine();
+                    streamWriter.WriteLine("    node [ fontname=\"Fira Code\", fontcolor=gray, style=\"\", fontsize=8, shape=\"oval\" ];");
+                    foreach (var package in packageList)
                     {
-                        Console.WriteLine($"  Ref: {reference}");
+                        if (options.AddLabels)
+                        {
+                            streamWriter.WriteLine($"    \"{package}\" [label=\"{package.Replace(".", "\\n")}\"]");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"    \"{package}\"");
+                        }
                     }
                 }
+
+                foreach (var project in projects)
+                {
+                    streamWriter.WriteLine();
+                    streamWriter.WriteLine($"    # {project.ProjectName}");
+                    streamWriter.WriteLine($"    Solution -> \"{project.ProjectName}\"");
+
+                    if (options.IncludeProjects)
+                    {
+                        foreach (var reference in project.ProjectReferences)
+                        {
+                            streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference}\"");
+                        }
+                    }
+
+                    if (options.IncludePackages)
+                    {
+                        foreach (var reference in project.PackageReferences)
+                        {
+                            streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference}\"");
+                        }
+                    }
+                }
+
+                streamWriter.WriteLine("}");
             }
+
             return;
         }
 
@@ -90,12 +148,12 @@ namespace depgraph
             
             var document = XDocument.Load(projectFile);
 
-            if (options.IncludePackages)
+            if (options.IncludeProjects)
             {
                 LoadProjectReferences(document, projectInformation);
             }
 
-            if (options.IncludeProjects)
+            if (options.IncludePackages)
             {
                 LoadPackageReferences(document, projectInformation);
             }
@@ -115,7 +173,11 @@ namespace depgraph
 
             foreach (var reference in references)
             {
-                projectInformation.ProjectReferences.Add(reference);
+                var slashPos = reference.LastIndexOf('\\');
+                var fileName = reference.Substring(slashPos + 1);
+                fileName = fileName.Replace(".csproj", "");
+
+                projectInformation.ProjectReferences.Add(fileName);
             }
         }
 

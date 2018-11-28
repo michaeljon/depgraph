@@ -17,5 +17,8 @@ namespace depgraph
 
         [Option("graph-file", HelpText = "Output graph file")]
         public string GraphFile { get; set; } = "dependencies.dot";
+
+        [Option("add-labels", HelpText = "Replace . in name with a newline", Default = false)]
+        public bool AddLabels { get; set; } = false;
     }
 }
