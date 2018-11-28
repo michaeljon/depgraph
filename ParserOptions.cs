@@ -20,5 +20,8 @@ namespace depgraph
 
         [Option("add-labels", HelpText = "Replace . in name with a newline", Default = false)]
         public bool AddLabels { get; set; } = false;
+
+        [Option("for-each", HelpText = "Process each discovered .csproj individually", Default = false)]
+        public bool ForEach { get; set; } = false;
     }
 }

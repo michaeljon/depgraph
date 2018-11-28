@@ -18,8 +18,21 @@ namespace depgraph
             var exitCode = result.MapResult(
                 options =>
                 {
-                    var projects = LoadProjectInformation(options);
-                    GenerateGraph(options, projects);
+                    if (options.ForEach == false)
+                    {
+                        var projects = LoadProjectInformation(options);
+                        GenerateGraph(options, options.GraphFile, true, projects);
+                    }
+                    else
+                    {
+                        var projectFiles = Directory.EnumerateFiles(options.Path, "*.csproj", SearchOption.AllDirectories);
+                        foreach (var projectFile in projectFiles)
+                        {
+                            var projectInformation = ParseProjectFile(options, projectFile);
+                            var graphFile = Path.ChangeExtension(projectFile, ".dot");
+                            GenerateGraph(options, graphFile, false, new List<ProjectInformation>() { projectInformation });
+                        }
+                    }
                     
                     return 0;
                 },
@@ -53,7 +66,7 @@ namespace depgraph
             return projects;
         }
 
-        static void GenerateGraph(ParserOptions options, IList<ProjectInformation> projects)
+        static void GenerateGraph(ParserOptions options, string graphFile, bool generateThisNode, IList<ProjectInformation> projects)
         {
             var projectList = projects
                 .Select(p => p.ProjectName)
@@ -67,7 +80,7 @@ namespace depgraph
                 .ToHashSet()
                 .OrderBy(p => p);
 
-            using (var streamWriter = new StreamWriter(options.GraphFile))
+            using (var streamWriter = new StreamWriter(graphFile))
             {
                 streamWriter.WriteLine(
 @"digraph std {
@@ -75,9 +88,13 @@ namespace depgraph
     edge [ fontname=""Fira Code"", fontcolor=red, fontsize=8, arrowsize=0.5 ];
     node [ fontname=""Fira Code"", style=filled, fillcolor=black, fontcolor=white, fontsize=8, shape=""box"" ];
 
-    # this project
-    Solution
 ");
+
+                if (generateThisNode)
+                {
+                    streamWriter.WriteLine(@"    # this project");
+                    streamWriter.WriteLine(@"    ");
+                }
 
                 if (options.IncludeProjects)
                 {
@@ -117,7 +134,11 @@ namespace depgraph
                 {
                     streamWriter.WriteLine();
                     streamWriter.WriteLine($"    # {project.ProjectName}");
-                    streamWriter.WriteLine($"    Solution -> \"{project.ProjectName}\"");
+
+                    if (generateThisNode)
+                    {
+                        streamWriter.WriteLine($"    Solution -> \"{project.ProjectName}\"");
+                    }
 
                     if (options.IncludeProjects)
                     {
