@@ -84,7 +84,7 @@ namespace depgraph
             var packageList = projects
                 .SelectMany(p => p.PackageReferences)
                 .ToHashSet()
-                .OrderBy(p => p);
+                .OrderBy(p => p.Name);
 
             using (var streamWriter = new StreamWriter(graphFile))
             {
@@ -116,14 +116,7 @@ namespace depgraph
                         var p = projects
                             .First(pr => pr.ProjectName == project);
                         streamWriter.WriteLine($"    node [ fontname=\"Fira Code\", fontcolor=black, fontsize=8, color=\"#{p.RGB}\", shape=box, style=filled ];");
-                        if (options.AddLabels)
-                        {
-                            streamWriter.WriteLine($"    \"{project}\" [label=\"{project.Replace(".", "\\n")}\"]");
-                        }
-                        else
-                        {
-                            streamWriter.WriteLine($"    \"{project}\"");
-                        }
+                        streamWriter.WriteLine($"    \"{project}\"");
                     }
                 }
 
@@ -133,14 +126,9 @@ namespace depgraph
                     streamWriter.WriteLine("    node [ fontname=\"Fira Code\", fontcolor=black, color=\"#c0c0c0\" style=filled, fontsize=6, shape=oval ];");
                     foreach (var package in packageList)
                     {
-                        if (options.AddLabels)
-                        {
-                            streamWriter.WriteLine($"    \"{package}\" [label=\"{package.Replace(".", "\\n")}\"]");
-                        }
-                        else
-                        {
-                            streamWriter.WriteLine($"    \"{package}\"");
-                        }
+                        var label = package.Name + "\\n" + package.Version;
+
+                        streamWriter.WriteLine($"    \"{package.ToString()}\" [label=\"{label}\"]");
                     }
                 }
 
@@ -167,7 +155,7 @@ namespace depgraph
                     {
                         foreach (var reference in project.PackageReferences)
                         {
-                            streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference}\"");
+                            streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference.ToString()}\"");
                         }
                     }
                 }
@@ -224,7 +212,7 @@ namespace depgraph
 
             var references = document
                 .XPathSelectElements("//*[local-name()='PackageReference']", namespaceManager)
-                .Select(r => r.Attribute("Include").Value)
+                .Select(r => new PackageInformation { Name = r.Attribute("Include").Value, Version = r.Attribute("Version").Value })
                 .ToList();
 
             foreach (var reference in references)

@@ -21,9 +21,6 @@ namespace depgraph
         [Option("left-right", HelpText = "Prefer a left-right layout algorithm", Default = false)]
         public bool LeftRight { get; set; } = false;
 
-        [Option("add-labels", HelpText = "Replace . in name with a newline", Default = false)]
-        public bool AddLabels { get; set; } = false;
-
         [Option("for-each", HelpText = "Process each discovered .csproj individually", Default = false)]
         public bool ForEach { get; set; } = false;
     }

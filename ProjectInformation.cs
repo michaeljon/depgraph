@@ -19,6 +19,6 @@ namespace depgraph
         
         public List<string> ProjectReferences { get; } = new List<string>();
 
-        public List<string> PackageReferences { get; } = new List<string>();
+        public List<PackageInformation> PackageReferences { get; } = new List<PackageInformation>();
     }
 }
