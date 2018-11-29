@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CommandLine;
 
 namespace depgraph
@@ -23,5 +24,12 @@ namespace depgraph
 
         [Option("for-each", HelpText = "Process each discovered .csproj individually", Default = false)]
         public bool ForEach { get; set; } = false;
+
+        [Option("exclude", HelpText = "Used as a pattern to exclude top-level projects", Separator = ';')]
+        public IEnumerable<string> Exclude { get; set; }
+
+        [Option("verbose", HelpText = "Write a bunch of stuff to the console", Default = false)]
+        public bool Verbose { get; set; } = false;
+
     }
 }

@@ -56,11 +56,35 @@ namespace depgraph
 
             var projectFiles = Directory.EnumerateFiles(options.Path, "*.csproj", SearchOption.AllDirectories);
 
+            if (options.Verbose)
+            {
+                foreach (var exclusion in options.Exclude)
+                {
+                    Console.WriteLine($"Exlusion: {exclusion}");
+                }
+            }
+
             foreach (var projectFile in projectFiles)
             {
-                var projectInformation = ParseProjectFile(options, projectFile);
+                if (options.Verbose)
+                {
+                    Console.WriteLine($"Project: {projectFile}");
+                }
 
+                // if the user has provided a filter, and the current filename matches, then skip it
+                if (options.Exclude.Any(e => projectFile.Contains(e, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                var projectInformation = ParseProjectFile(options, projectFile);
                 projects.Add(projectInformation);
+            }
+
+            if (options.Verbose)
+            {
+                foreach (var project in projects)
+                {
+                    Console.WriteLine($"Will process: {project.ProjectName}");
+                }
             }
 
             return projects;
@@ -71,14 +95,13 @@ namespace depgraph
             var nextHue = 0;
             foreach (var project in projects)
             {
-                project.RGB = GetHexFrom(ColorFromHue(GenerateHue(nextHue++), 1.0, 0.65));
+                project.Color = GetHueString(GenerateHue(nextHue++), 0.50, 0.65);
             }
 
             var projectList = projects
                 .Select(p => p.ProjectName)
-                .Union(projects
-                    .SelectMany(p => p.ProjectReferences)
-                    .ToHashSet())
+                .Union(projects.SelectMany(p => p.ProjectReferences))
+                .ToHashSet()
                 .OrderBy(p => p);
 
             var packageList = projects
@@ -114,8 +137,15 @@ namespace depgraph
                     foreach (var project in projectList)
                     {
                         var p = projects
-                            .First(pr => pr.ProjectName == project);
-                        streamWriter.WriteLine($"    node [ fontname=\"Fira Code\", fontcolor=black, fontsize=8, color=\"#{p.RGB}\", shape=box, style=filled ];");
+                            .FirstOrDefault(pr => pr.ProjectName == project);
+                        if (p == null)
+                        {
+                            streamWriter.WriteLine($"    node [ fontname=\"Fira Code\", color=red, fontcolor=black, fontsize=8, shape=box, style=dotted ];");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"    node [ fontname=\"Fira Code\", fontcolor=black, fontsize=8, color=\"{p.Color}\", shape=box, style=filled ];");
+                        }
                         streamWriter.WriteLine($"    \"{project}\"");
                     }
                 }
@@ -134,9 +164,14 @@ namespace depgraph
 
                 foreach (var project in projects)
                 {
+                    if (options.Verbose)
+                    {
+                        Console.WriteLine($"{project.ProjectName}");
+                    }
+
                     streamWriter.WriteLine();
                     streamWriter.WriteLine($"    # {project.ProjectName}");
-                    streamWriter.WriteLine($"    edge [ color=\"#{project.RGB}\" ];");
+                    streamWriter.WriteLine($"    edge [ color=\"{project.Color}\" ];");
 
                     if (generateThisNode)
                     {
@@ -147,6 +182,11 @@ namespace depgraph
                     {
                         foreach (var reference in project.ProjectReferences)
                         {
+                            if (options.Verbose)
+                            {
+                                Console.WriteLine($"    -> \"{reference}\" (proj)");
+                            }
+
                             streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference}\"");
                         }
                     }
@@ -155,6 +195,11 @@ namespace depgraph
                     {
                         foreach (var reference in project.PackageReferences)
                         {
+                            if (options.Verbose)
+                            {
+                                Console.WriteLine($"    -> \"{reference.ToString()}\" (pkg)");
+                            }
+
                             streamWriter.WriteLine($"    \"{project.ProjectName}\" -> \"{reference.ToString()}\"");
                         }
                     }
@@ -237,55 +282,9 @@ namespace depgraph
             return hue;
         }
 
-        static int ColorFromHue(double hue, double saturation, double level)
+        public static string GetHueString(double hue, double saturation, double level)
         {
-            var r = level;   // default to gray
-            var g = level;
-            var b = level;
-            var v = (level <= 0.5) ? (level * (1.0 + saturation)) : (level + saturation - level * saturation);
-
-            if (v > 0)
-            {
-                var m = level + level - v;
-                var sv = (v - m) / v;
-                hue *= 6.0;
-                var sextant = (int)hue;
-                var fract = hue - sextant;
-                var vsf = v * sv * fract;
-                var mid1 = m + vsf;
-                var mid2 = v - vsf;
-
-                switch (sextant)
-                {
-                    case 0:
-                        r = v; g = mid1; b = m; break;
-
-                    case 1:
-                        r = mid2; g = v; b = m; break;
-
-                    case 2:
-                        r = m; g = v; b = mid1;break;
-
-                    case 3:
-                        r = m; g = mid2; b = v; break;
-
-                    case 4:
-                        r = mid1; g = m; b = v; break;
-
-                    case 5:
-                        r = v; g = m; b = mid2; break;
-                }
-            }
-
-            return 255 << 24 | 
-                Convert.ToByte(r * 255.0f) << 16 | 
-                Convert.ToByte(g * 255.0f) << 8 | 
-                Convert.ToByte(b * 255.0f);
-        }
-
-        public static string GetHexFrom(int color)
-        {
-            return color.ToString("X6").Substring(2);
+            return string.Format("{0:0.000} {1:0.000} {2:0.000}", hue, saturation, level);
         }
     }
 }
