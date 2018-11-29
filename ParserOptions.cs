@@ -18,6 +18,9 @@ namespace depgraph
         [Option("graph-file", HelpText = "Output graph file")]
         public string GraphFile { get; set; } = "dependencies.dot";
 
+        [Option("left-right", HelpText = "Prefer a left-right layout algorithm", Default = false)]
+        public bool LeftRight { get; set; } = false;
+
         [Option("add-labels", HelpText = "Replace . in name with a newline", Default = false)]
         public bool AddLabels { get; set; } = false;
 

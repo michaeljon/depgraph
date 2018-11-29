@@ -14,6 +14,8 @@ namespace depgraph
         }
 
         public string ProjectName { get; set; }
+
+        public string RGB { get; set; } = "000000";
         
         public List<string> ProjectReferences { get; } = new List<string>();
 
