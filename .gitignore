@@ -10,6 +10,9 @@
 *.rdb
 *.pem
 
+# generated files
+*.dot
+
 # VS code settings
 .vscode/
 WebEssentials2015-Settings.json
