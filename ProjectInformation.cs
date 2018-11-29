@@ -15,7 +15,9 @@ namespace depgraph
 
         public string ProjectName { get; set; }
 
-        public string Color { get; set; } = "black";
+        public string FillColor { get; set; } = "white";
+
+        public string BorderColor { get; set; } = "black";
         
         public List<string> ProjectReferences { get; } = new List<string>();
 

@@ -25,6 +25,9 @@ namespace depgraph
         [Option("for-each", HelpText = "Process each discovered .csproj individually", Default = false)]
         public bool ForEach { get; set; } = false;
 
+        [Option("skip-solution", HelpText = "If running a for-each build, skip the top-level solution node", Default = false)]
+        public bool SkipSolutionNode { get; set; } = false;
+
         [Option("exclude", HelpText = "Used as a pattern to exclude top-level projects", Separator = ';')]
         public IEnumerable<string> Exclude { get; set; }
 
