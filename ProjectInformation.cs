@@ -4,16 +4,12 @@ namespace depgraph
 {
     public class ProjectInformation
     {
-        public ProjectInformation()
-        {
-        }
-
         public ProjectInformation(string projectName)
         {
             ProjectName = projectName;
         }
 
-        public string ProjectName { get; set; }
+        public string ProjectName { get; }
 
         public string FillColor { get; set; } = "white";
 

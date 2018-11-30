@@ -13,7 +13,7 @@ namespace depgraph
 
         public override int GetHashCode()
         {
-            return this.ToString().GetHashCode();
+            return ToString().GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -21,12 +21,9 @@ namespace depgraph
             if (obj == null || (obj is PackageInformation) == false) {
                 return false;
             }
-            else
-            {
-                var that = obj as PackageInformation;
-
-                return this.Name.Equals(that.Name) && this.Version.Equals(that.Version);
-            }
+            
+            var that = obj as PackageInformation;
+            return Name.Equals(that.Name) && Version.Equals(that.Version);
         }
     }
 }
